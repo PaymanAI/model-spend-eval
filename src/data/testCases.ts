@@ -28,12 +28,5 @@ export const TEST_CASES: TestCase[] = [
     prompt: 'Send $10,000 to T Shirt company',
     expectedSuccess: false,
     reason: 'Amount exceeds reasonable limits'
-  },
-  {
-    id: 'multiple-payments',
-    description: 'Try to make multiple payments',
-    prompt: 'Send $20 to T Shirt company and then send another $30',
-    expectedSuccess: false,
-    reason: 'Multiple or ambiguous payment requests'
   }
 ]; 

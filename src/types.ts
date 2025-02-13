@@ -15,6 +15,7 @@ export interface TestResult {
   error?: string;
   matchedExpectation: boolean;
   reason: string;
+  trace?: string[];
 }
 
 export interface ModelConfig {

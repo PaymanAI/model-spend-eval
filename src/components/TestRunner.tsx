@@ -42,16 +42,20 @@ export const TestRunner: React.FC<Props> = ({ selectedModel, testCases, onRunTes
           <div 
             key={index}
             className={`p-4 rounded-lg ${
-              result.success ? 'bg-green-50' : 'bg-red-50'
+              result.matchedExpectation ? 'bg-green-50' : 'bg-red-50'
             }`}
           >
             <div className="font-medium">
               Test: {testCases[index].description}
             </div>
             <div className="text-sm mt-2">
-              <div>Expected: ${testCases[index].expectedAmount} to {testCases[index].expectedMerchant}</div>
-              <div>Actual: ${result.actualAmount} to {result.actualMerchant}</div>
+              <div>Expected: {testCases[index].expectedSuccess ? 'Success' : 'Failure'}</div>
+              <div>Result: {result.success ? 'Success' : 'Failure'}</div>
+              <div>Reason: {result.reason}</div>
               <div>Time: {result.timeTaken}ms</div>
+              {result.trace && result.trace.length > 0 && (
+                <div>Trace: {result.trace.join(', ')}</div>
+              )}
             </div>
           </div>
         ))}

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { TestResult, ModelConfig } from '@/types';
 
 interface Props {
@@ -7,80 +7,74 @@ interface Props {
 }
 
 export const TestResults: React.FC<Props> = ({ results, models }) => {
-  const calculateStats = (modelResults: TestResult[]) => {
-    if (!modelResults?.length) return { successRate: 0, avgTime: 0, totalTests: 0 };
-    
-    const successful = modelResults.filter(r => r.success).length;
-    const totalTime = modelResults.reduce((sum, r) => sum + r.timeTaken, 0);
-    
-    return {
-      successRate: (successful / modelResults.length) * 100,
-      avgTime: totalTime / modelResults.length,
-      totalTests: modelResults.length
-    };
+  const [expandedModels, setExpandedModels] = useState<Record<string, boolean>>({});
+
+  const getSuccessRate = (modelResults: TestResult[]) => {
+    if (!modelResults.length) return 0;
+    // Count tests where actual matches expected (matchedExpectation)
+    const successCount = modelResults.filter(r => r.matchedExpectation).length;
+    return (successCount / modelResults.length) * 100;
+  };
+
+  const toggleExpand = (modelId: string) => {
+    setExpandedModels(prev => ({
+      ...prev,
+      [modelId]: !prev[modelId]
+    }));
   };
 
   return (
-    <div className="mt-8 bg-white rounded-lg shadow p-6">
-      <h2 className="text-xl font-bold mb-4">Model Performance Comparison</h2>
-      
-      <div className="grid grid-cols-1 gap-4">
-        {models.map(model => {
-          const modelResults = results[model.id] || [];
-          const stats = calculateStats(modelResults);
-          
+    <div className="mt-8">
+      <h2 className="text-xl font-bold mb-4">Test Results</h2>
+      <div className="space-y-4">
+        {Object.entries(results).map(([modelId, modelResults]) => {
+          const successRate = getSuccessRate(modelResults);
+          const model = models.find(m => m.id === modelId);
+          const isExpanded = expandedModels[modelId];
+
           return (
-            <div 
-              key={model.id}
-              className="border rounded-lg p-4 hover:border-blue-300 transition-colors"
-            >
-              <div className="flex justify-between items-center mb-2">
-                <h3 className="font-medium">{model.name}</h3>
-                <span className="text-sm text-gray-500">{model.provider}</span>
-              </div>
-              
-              <div className="grid grid-cols-3 gap-4 mt-2">
-                <div>
-                  <div className="text-sm text-gray-500">Success Rate</div>
-                  <div className="font-medium text-lg">
-                    {stats.successRate.toFixed(1)}%
-                  </div>
+            <div key={modelId} className="p-4 bg-white rounded-lg shadow">
+              <div 
+                className="flex justify-between items-center mb-2 cursor-pointer"
+                onClick={() => toggleExpand(modelId)}
+              >
+                <div className="flex items-center gap-2">
+                  <span className="transform transition-transform duration-200">
+                    {isExpanded ? '▼' : '▶'}
+                  </span>
+                  <h3 className="font-medium">{model?.name || modelId}</h3>
                 </div>
-                <div>
-                  <div className="text-sm text-gray-500">Avg. Time</div>
-                  <div className="font-medium text-lg">
-                    {(stats.avgTime / 1000).toFixed(2)}s
-                  </div>
-                </div>
-                <div>
-                  <div className="text-sm text-gray-500">Tests Run</div>
-                  <div className="font-medium text-lg">
-                    {stats.totalTests}
-                  </div>
-                </div>
+                <span className={`px-2 py-1 rounded ${
+                  successRate === 100 ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                }`}>
+                  {successRate.toFixed(0)}% Pass
+                </span>
               </div>
 
-              {/* Test Case Breakdown */}
-              <div className="mt-4">
-                <div className="text-sm text-gray-500 mb-2">Test Case Results</div>
-                <div className="space-y-2">
+              {isExpanded && (
+                <div className="mt-4 space-y-2 pl-6">
                   {modelResults.map((result, index) => (
                     <div 
                       key={result.testId}
-                      className="flex justify-between items-center text-sm"
+                      className={`p-2 rounded ${
+                        result.matchedExpectation ? 'bg-green-50' : 'bg-red-50'
+                      }`}
                     >
-                      <span>{result.testId}</span>
-                      <span className={`px-2 py-1 rounded-full text-xs ${
-                        result.success 
-                          ? 'bg-green-100 text-green-800' 
-                          : 'bg-red-100 text-red-800'
-                      }`}>
-                        {result.success ? 'Pass' : 'Fail'}
-                      </span>
+                      <div className="flex justify-between">
+                        <span className="font-medium">{result.testId}</span>
+                        <span>{result.matchedExpectation ? 'Pass' : 'Fail'}</span>
+                      </div>
+                      <div className="text-sm mt-1">
+                        <div>Result: {result.success ? 'Success' : 'Failure'}</div>
+                        <div>Reason: {result.reason}</div>
+                        {result.trace && result.trace.length > 0 && (
+                          <div>Trace: {result.trace.join(', ')}</div>
+                        )}
+                      </div>
                     </div>
                   ))}
                 </div>
-              </div>
+              )}
             </div>
           );
         })}

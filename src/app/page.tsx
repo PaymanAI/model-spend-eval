@@ -14,8 +14,8 @@ const AVAILABLE_MODELS: ModelConfig[] = [
     provider: 'openai'
   },
   {
-    id: 'google/gemini-2.0-flash-001',
-    name: 'Gemini 2.0 Flash',
+    id: 'google/gemini-flash-1.5-8b',
+    name: 'google/gemini-flash-1.5-8b',
     provider: 'google'
   },
   {
