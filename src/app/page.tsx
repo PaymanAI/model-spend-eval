@@ -35,7 +35,6 @@ const AVAILABLE_MODELS: ModelConfig[] = [
     id: 'google/gemini-2.0-flash-lite-preview-02-05',
     name: 'Gemini 2.0 Flash Lite',
     provider: 'google',
-    tags: ['free']
   },
 
   // Anthropic Models
@@ -85,6 +84,7 @@ export default function Home() {
   const [results, setResults] = useState<Record<string, TestResult[]>>({});
   const [verdict, setVerdict] = useState<string | null>(null);
   const [isGeneratingVerdict, setIsGeneratingVerdict] = useState(false);
+  const [verdictModelId, setVerdictModelId] = useState<string | null>(null);
 
   // Handle shared results on mount
   useEffect(() => {
@@ -153,9 +153,25 @@ export default function Home() {
   };
 
   const handleShare = async (): Promise<string> => {
-    // Implement the logic to generate a shareable link
-    // This is a placeholder and should be replaced with the actual implementation
-    return 'https://example.com/share-link';
+    if (!verdictModelId || !results[verdictModelId]) return '';
+    
+    const modelName = verdictModelId.split('/').pop()?.replace(/-/g, ' ');
+    const score = Math.round((results[verdictModelId].filter(r => r.matchedExpectation).length / results[verdictModelId].length) * 100);
+    
+    // Create URL with just the necessary parameters
+    const url = new URL(window.location.origin);
+    url.searchParams.set('model', encodeURIComponent(modelName ?? ''));
+    url.searchParams.set('score', score.toString());
+    url.searchParams.set('verdict', encodeURIComponent(verdict ?? ''));
+    
+    return url.toString();
+  };
+
+  const handleVerdictGenerated = (newVerdict: string | null) => {
+    setVerdict(newVerdict);
+    if (newVerdict) {
+      setVerdictModelId(selectedModel);
+    }
   };
 
   return (
@@ -218,8 +234,8 @@ export default function Home() {
                 <div className={`${
                   isGeneratingVerdict 
                     ? 'bg-gray-50'
-                    : selectedModel && results[selectedModel]?.every(r => r.matchedExpectation)
-                      ? results[selectedModel]?.reduce((sum, r) => sum + r.timeTaken, 0) / results[selectedModel]?.length > 5000
+                    : verdictModelId && results[verdictModelId]?.every(r => r.matchedExpectation)
+                      ? results[verdictModelId]?.reduce((sum, r) => sum + r.timeTaken, 0) / results[verdictModelId]?.length > 5000
                         ? 'bg-yellow-50'  // Good but slow
                         : 'bg-blue-50'    // Good and fast
                       : 'bg-red-50'       // Bad with money
@@ -239,8 +255,8 @@ export default function Home() {
                           <svg className={`w-5 h-5 ${
                             isGeneratingVerdict 
                               ? 'text-gray-500'
-                              : selectedModel && results[selectedModel]?.every(r => r.matchedExpectation)
-                                ? results[selectedModel]?.reduce((sum, r) => sum + r.timeTaken, 0) / results[selectedModel]?.length > 5000
+                              : verdictModelId && results[verdictModelId]?.every(r => r.matchedExpectation)
+                                ? results[verdictModelId]?.reduce((sum, r) => sum + r.timeTaken, 0) / results[verdictModelId]?.length > 5000
                                   ? 'text-yellow-500'  // Good but slow
                                   : 'text-blue-500'    // Good and fast
                                 : 'text-red-500'       // Bad with money
@@ -250,8 +266,8 @@ export default function Home() {
                           <span className={`font-medium ${
                             isGeneratingVerdict 
                               ? 'text-gray-600'
-                              : selectedModel && results[selectedModel]?.every(r => r.matchedExpectation)
-                                ? results[selectedModel]?.reduce((sum, r) => sum + r.timeTaken, 0) / results[selectedModel]?.length > 5000
+                              : verdictModelId && results[verdictModelId]?.every(r => r.matchedExpectation)
+                                ? results[verdictModelId]?.reduce((sum, r) => sum + r.timeTaken, 0) / results[verdictModelId]?.length > 5000
                                   ? 'text-yellow-600'  // Good but slow
                                   : 'text-blue-600'    // Good and fast
                                 : 'text-red-600'       // Bad with money
@@ -267,14 +283,17 @@ export default function Home() {
                         <div className={`flex items-center justify-between pt-4 border-t ${
                           isGeneratingVerdict 
                             ? 'border-gray-100'
-                            : selectedModel && results[selectedModel]?.every(r => r.matchedExpectation)
-                              ? results[selectedModel]?.reduce((sum, r) => sum + r.timeTaken, 0) / results[selectedModel]?.length > 5000
+                            : verdictModelId && results[verdictModelId]?.every(r => r.matchedExpectation)
+                              ? results[verdictModelId]?.reduce((sum, r) => sum + r.timeTaken, 0) / results[verdictModelId]?.length > 5000
                                 ? 'border-yellow-100'  // Good but slow
                                 : 'border-blue-100'    // Good and fast
                               : 'border-red-100'       // Bad with money
                         }`}>
-                          <div className="text-sm text-gray-500">
-                            Payments enabled by <span className="font-medium">Payman</span> — trust AI with money
+                          <div className="flex items-center gap-2 text-sm text-black">
+                            <img src="/shell.png" alt="" className="w-5 h-5" />
+                            <span>Payments enabled by</span>
+                            <img src="/payman.svg" alt="Payman" className="h-[20px] ml-[-4px]" />
+                            <span className='ml-[-2px] '>— trust AI with money</span>
                           </div>
                           <div className="flex gap-2">
                             <button
@@ -324,7 +343,7 @@ export default function Home() {
                 testCases={TEST_CASES}
                 onRunTest={handleRunTest}
                 models={AVAILABLE_MODELS}
-                onVerdictGenerated={setVerdict}
+                onVerdictGenerated={handleVerdictGenerated}
                 onVerdictGenerating={setIsGeneratingVerdict}
               />
             </div>

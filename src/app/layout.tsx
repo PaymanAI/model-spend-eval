@@ -13,43 +13,53 @@ const geistMono = Geist_Mono({
 });
 
 export async function generateMetadata({ 
-  searchParams 
+  searchParams = {} 
 }: { 
   searchParams: { [key: string]: string | string[] | undefined }
 }): Promise<Metadata> {
-  // Check if this is a shared result
-  const sharedData = searchParams?.share ? 
-    JSON.parse(atob(Array.isArray(searchParams.share) ? searchParams.share[0] : searchParams.share)) : null;
+  // Set the base URL for metadata
+  const metadataBase = new URL(
+    process.env.VERCEL_URL 
+      ? `https://${process.env.VERCEL_URL}`
+      : 'http://localhost:3003'
+  );
 
-  if (sharedData) {
-    const successCount = sharedData.results.filter((r: { matchedExpectation: boolean }) => r.matchedExpectation).length;
-    const totalTests = sharedData.results.length;
-    const score = Math.round((successCount / totalTests) * 100);
-    const modelName = sharedData.model?.split('/').pop()?.replace(/-/g, ' ') || 'AI';
+  const model = searchParams?.model 
+    ? decodeURIComponent(Array.isArray(searchParams.model) ? searchParams.model[0] : searchParams.model) 
+    : null;
+  const score = searchParams.score 
+    ? parseInt(Array.isArray(searchParams.score) ? searchParams.score[0] : searchParams.score) 
+    : null;
+  const verdict = searchParams.verdict 
+    ? decodeURIComponent(Array.isArray(searchParams.verdict) ? searchParams.verdict[0] : searchParams.verdict) 
+    : null;
 
+  if (model && score !== null) {
     return {
-      title: `Can you trust ${modelName} with your money? 💸`,
-      description: sharedData.verdict || `See how ${modelName} handled payment requests - ${score}% success rate. Try it yourself!`,
+      metadataBase,
+      title: `Can you trust ${model} with your money? 💸`,
+      description: verdict || `See how ${model} handled payment requests - ${score}% success rate. Try it yourself!`,
       openGraph: {
-        title: `Can you trust ${modelName} with your money? 💸`,
-        description: sharedData.verdict || `See how ${modelName} handled payment requests - ${score}% success rate. Try it yourself!`,
-        images: [`/api/og?score=${score}&model=${encodeURIComponent(modelName)}&verdict=${encodeURIComponent(sharedData.verdict || '')}`],
+        title: `Can you trust ${model} with your money? 💸`,
+        description: verdict || `See how ${model} handled payment requests - ${score}% success rate. Try it yourself!`,
+        images: [`/api/og?score=${score}&model=${encodeURIComponent(model)}&verdict=${encodeURIComponent(verdict || '')}`],
       },
       twitter: {
         card: 'summary_large_image',
-        title: `Can you trust ${modelName} with your money? 💸`,
-        description: sharedData.verdict || `See how ${modelName} handled payment requests - ${score}% success rate. Try it yourself!`,
-        images: [`/api/og?score=${score}&model=${encodeURIComponent(modelName)}&verdict=${encodeURIComponent(sharedData.verdict || '')}`],
+        title: `Can you trust ${model} with your money? 💸`,
+        description: verdict || `See how ${model} handled payment requests - ${score}% success rate. Try it yourself!`,
+        images: [`/api/og?score=${score}&model=${encodeURIComponent(model)}&verdict=${encodeURIComponent(verdict || '')}`],
       },
     };
   }
 
   return {
-    title: 'AI Payment Testing Suite',
-    description: 'Test how AI models handle payment requests and spending limits',
+    metadataBase,
+    title: 'Which AI model is best with money?',
+    description: 'Try multiple AI models with money and see which is best',
     openGraph: {
-      title: 'AI Payment Testing Suite',
-      description: 'Test how AI models handle payment requests and spending limits',
+      title: 'Which AI Model Is Best With Money?',
+      description: 'Try them all and see which is best!',
       images: ['/api/og'],
     },
     twitter: {

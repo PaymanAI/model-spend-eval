@@ -2,10 +2,16 @@ import { createOpenRouter } from '@openrouter/ai-sdk-provider';
 import { generateText } from 'ai';
 import { paykit } from 'payman-paykit';
 
-const tools = paykit({
+// Initialize payment tools
+const { 
+  sendPayment, 
+  searchPayees, 
+  getSpendableBalance 
+} = paykit({
   apiSecret: process.env.PAYMAN_API_SECRET!,
-  environment: 'sandbox'
+  environment: 'sandbox',
 });
+
 
 interface ModelResponse {
   success: boolean;
@@ -35,9 +41,15 @@ export async function getModelResponse(modelId: string, prompt: string, expected
     let trace: string[] = [];
     let paymentError: string | undefined;
 
+    
+
     const response = await generateText({
       model: openrouter(modelId),
-      tools,
+      tools: {
+        sendPayment,
+        searchPayees,
+        getSpendableBalance
+      },
       maxSteps: 5,
       prompt: `${SYSTEM_PROMPT}\n${prompt}`,
       onStepFinish({ toolCalls, toolResults }) {

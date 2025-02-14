@@ -44,11 +44,11 @@ Actual: ${r.reason}
 Time: ${r.timeTaken}ms
 Success: ${r.matchedExpectation ? 'Yes' : 'No'}`).join('\n')}
 
-Write a short, witty response (max 2 sentences) that ${
+Write a witty response (must be 2 sentences) that ${
   allTestsPassed
     ? `mocks humans by comparing them to this${isSlow ? ' slow but' : ''} surprisingly responsible AI`
     : `roasts the AI for its${isSlow ? ' slow and' : ''} specific financial mistakes`
-}. Keep it punchy and under 150 characters.`;
+}. Keep it punchy and under 300 characters.`;
 
   try {
     const response = await generateText({

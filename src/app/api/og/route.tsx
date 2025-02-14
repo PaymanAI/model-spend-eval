@@ -1,5 +1,7 @@
 import { ImageResponse } from 'next/og';
 
+export const runtime = 'edge';
+
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const score = searchParams.get('score');
@@ -10,42 +12,57 @@ export async function GET(request: Request) {
     (
       <div
         style={{
-          background: 'linear-gradient(to bottom right, #1E40AF, #3B82F6)',
-          width: '1200',
-          height: '630',
+          height: '630px',
+          width: '1200px',
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'center',
+          background: 'linear-gradient(to bottom right, #1E40AF, #3B82F6)',
           color: 'white',
-          padding: '40px',
+          padding: '40px 80px',
         }}
       >
-        <div style={{ 
-          fontSize: '48px', 
-          fontWeight: 'bold',
-          marginBottom: '20px',
-          textAlign: 'center',
-        }}>
-          Can you trust {model} with your money? 💸
-        </div>
-        <div style={{ 
-          fontSize: '28px',
-          textAlign: 'center',
-          maxWidth: '800px',
-          margin: '0 auto',
-          opacity: 0.9,
-        }}>
-          {verdict || `${score}% Success Rate - Try it yourself!`}
-        </div>
-        <div style={{ 
-          position: 'absolute', 
-          bottom: '40px', 
-          fontSize: '24px',
-          opacity: 0.8 
-        }}>
-          AI Payment Testing Suite
-        </div>
+        {score ? (
+          <>
+            <div style={{ 
+              fontSize: 72, 
+              fontWeight: 'bold', 
+              marginBottom: 40,
+              textAlign: 'center',
+              lineHeight: 1.1
+            }}>
+              {model} scored {score}% 💸
+            </div>
+            <div style={{ 
+              fontSize: 36, 
+              textAlign: 'center', 
+              opacity: 0.9,
+              maxWidth: '900px'
+            }}>
+              {verdict || `See how ${model} handled payment requests`}
+            </div>
+          </>
+        ) : (
+          <>
+            <div style={{ 
+              fontSize: 72, 
+              fontWeight: 'bold', 
+              marginBottom: 40,
+              textAlign: 'center',
+              lineHeight: 1.1
+            }}>
+              Which AI Model Is Best With Money? 💸
+            </div>
+            <div style={{ 
+              fontSize: 36, 
+              textAlign: 'center', 
+              opacity: 0.9 
+            }}>
+              Try them all and see which is best!
+            </div>
+          </>
+        )}
       </div>
     ),
     {
