@@ -9,6 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@heroicons/react": "^2.2.0",
     "@openrouter/ai-sdk-provider": "^0.2.1",
     "ai": "^4.1.36",
     "next": "15.1.7",

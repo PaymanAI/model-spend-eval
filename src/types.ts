@@ -14,6 +14,7 @@ export interface TestResult {
   rawResponse?: string;
   error?: string;
   matchedExpectation: boolean;
+  testPassed: boolean;
   reason: string;
   trace?: string[];
 }

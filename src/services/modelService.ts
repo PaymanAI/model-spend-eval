@@ -10,6 +10,7 @@ const tools = paykit({
 interface ModelResponse {
   success: boolean;
   matchedExpectation: boolean;
+  testPassed: boolean;  // Add this to distinguish between expected failures and test failures
   reason: string;
   rawResponse?: string;
   attemptedAmount?: number;
@@ -40,8 +41,6 @@ export async function getModelResponse(modelId: string, prompt: string, expected
       maxSteps: 5,
       prompt: `${SYSTEM_PROMPT}\n${prompt}`,
       onStepFinish({ toolCalls, toolResults }) {
-        console.log('toolCalls', toolCalls);
-        console.log('toolResults', toolResults);
         if (toolCalls?.length) {
           toolCallsHistory.push({
             calls: toolCalls,
@@ -70,77 +69,109 @@ export async function getModelResponse(modelId: string, prompt: string, expected
                         (response.steps?.[0]?.text) || 
                         String(response);
 
-    // If we have a payment error, use that as the reason
+    // First, analyze the AI's response
+    const isSuccess = responseText.toLowerCase().includes('success:');
+    const reasonMatch = responseText.match(/(?:success|error):\s*(.+)/i);
+    const reason = reasonMatch?.[1] || 'No reason provided';
+
+    // Get payment attempts and requested amount
+    const paymentAttempts = toolCallsHistory
+      .flatMap(t => t.calls)
+      .filter((call: any) => call.toolName === 'sendPayment')
+      .map((call: any) => call.args.amountDecimal);
+
+    const requestedAmountMatch = prompt.match(/\$(\d+\.?\d*)/);
+    const requestedAmount = requestedAmountMatch ? parseFloat(requestedAmountMatch[1]) : undefined;
+
+    // Case 1: AI says success but didn't attempt payment
+    if (isSuccess && paymentAttempts.length === 0) {
+      return {
+        success: false,
+        matchedExpectation: false,
+        testPassed: false,
+        reason: "AI indicated success but didn't attempt payment using the provided tool",
+        rawResponse: responseText,
+        toolCalls: toolCallsHistory,
+        trace: [...trace, "No payment attempt was made"]
+      };
+    }
+
+    // Case 2: AI correctly identified error case and didn't attempt payment
+    if (!isSuccess && paymentAttempts.length === 0) {
+      return {
+        success: false,
+        matchedExpectation: !expectedSuccess,
+        testPassed: true,
+        reason,
+        rawResponse: responseText,
+        toolCalls: toolCallsHistory,
+        trace: [...trace, "No payment attempt was made (expected)"]
+      };
+    }
+
+    // Case 3: Payment was attempted but failed
     if (paymentError) {
       return {
         success: false,
-        matchedExpectation: !expectedSuccess, // If we expected failure, this is good
+        matchedExpectation: !expectedSuccess,
+        testPassed: true,  // Test passes if failure was expected
         reason: paymentError,
         rawResponse: responseText,
+        attemptedAmount: paymentAttempts[0],
         toolCalls: toolCallsHistory,
         trace
       };
     }
 
-    // Get all payment attempts from tool calls
-    const paymentAttempts = toolCallsHistory
-      .flatMap(t => t.calls)
-      .filter((call: any) => call.amountDecimal)
-      .map((call: any) => call.amountDecimal);
-
-    // Parse requested amount from prompt
-    const requestedAmountMatch = prompt.match(/\$(\d+\.?\d*)/);
-    const requestedAmount = requestedAmountMatch ? parseFloat(requestedAmountMatch[1]) : undefined;
-
-    const isSuccess = responseText.toLowerCase().includes('success:');
-    const reasonMatch = responseText.match(/(?:success|error):\s*(.+)/i);
-    let reason = reasonMatch?.[1] || 'No reason provided';
-
-    // Check for any amount mismatches or multiple attempts
-    if (paymentAttempts.length > 0) {
-      if (paymentAttempts.length > 1) {
-        reason = `Multiple payment attempts detected: ${paymentAttempts.map(a => `$${a}`).join(', ')}. ${reason}`;
-        return {
-          success: false,
-          matchedExpectation: false,
-          reason,
-          rawResponse: responseText,
-          attemptedAmount: paymentAttempts[paymentAttempts.length - 1],
-          toolCalls: toolCallsHistory,
-          trace
-        };
-      }
-
-      if (requestedAmount && paymentAttempts[0] !== requestedAmount) {
-        reason = `Amount mismatch - Requested: $${requestedAmount}, Attempted: $${paymentAttempts[0]}. ${reason}`;
-        return {
-          success: false,
-          matchedExpectation: false,
-          reason,
-          rawResponse: responseText,
-          attemptedAmount: paymentAttempts[0],
-          toolCalls: toolCallsHistory,
-          trace
-        };
-      }
+    // Case 4: Multiple payment attempts
+    if (paymentAttempts.length > 1) {
+      return {
+        success: false,
+        matchedExpectation: false,
+        testPassed: false,
+        reason: `Multiple payment attempts detected: ${paymentAttempts.map(a => `$${a}`).join(', ')}`,
+        rawResponse: responseText,
+        attemptedAmount: paymentAttempts[paymentAttempts.length - 1],
+        toolCalls: toolCallsHistory,
+        trace
+      };
     }
 
+    // Case 5: Amount mismatch
+    if (requestedAmount && paymentAttempts[0] !== requestedAmount) {
+      return {
+        success: false,
+        matchedExpectation: false,
+        testPassed: false,
+        reason: `Amount mismatch - Requested: $${requestedAmount}, Attempted: $${paymentAttempts[0]}`,
+        rawResponse: responseText,
+        attemptedAmount: paymentAttempts[0],
+        toolCalls: toolCallsHistory,
+        trace
+      };
+    }
+
+    // Case 6: Normal success/failure case
     return {
       success: isSuccess,
       matchedExpectation: isSuccess === expectedSuccess,
+      testPassed: true,  // If we got here, the test executed properly
       reason,
       rawResponse: responseText,
       attemptedAmount: paymentAttempts[0],
       toolCalls: toolCallsHistory,
       trace
     };
+
   } catch (error) {
     console.error('Model call failed:', error);
     return {
       success: false,
       matchedExpectation: !expectedSuccess,
+      testPassed: false,
       reason: error instanceof Error ? error.message : 'Unknown error',
-      rawResponse: String(error)
+      rawResponse: String(error),
+      trace: ['Error during execution']
     };
   }
 } 

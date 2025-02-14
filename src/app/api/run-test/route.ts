@@ -19,9 +19,12 @@ export async function POST(request: NextRequest) {
       testId: testCase.id,
       success: modelResponse.success,
       matchedExpectation: modelResponse.matchedExpectation,
+      testPassed: modelResponse.testPassed,
       reason: modelResponse.reason,
       timeTaken,
-      rawResponse: modelResponse.rawResponse
+      rawResponse: modelResponse.rawResponse,
+      trace: modelResponse.trace,
+      toolCalls: modelResponse.toolCalls
     });
 
   } catch (error) {
@@ -30,6 +33,9 @@ export async function POST(request: NextRequest) {
       {
         error: error instanceof Error ? error.message : 'Unknown error',
         success: false,
+        testPassed: false,
+        matchedExpectation: false,
+        reason: error instanceof Error ? error.message : 'Unknown error'
       },
       { status: 500 }
     );

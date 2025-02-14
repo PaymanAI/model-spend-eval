@@ -65,7 +65,8 @@ export default function Home() {
         timeTaken: 0,
         rawResponse: error instanceof Error ? error.message : String(error),
         matchedExpectation: false,
-        reason: 'Test execution failed'
+        reason: 'Test execution failed',
+        testPassed: false
       };
 
       // Update results state even for failures
