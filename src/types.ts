@@ -22,5 +22,6 @@ export interface TestResult {
 export interface ModelConfig {
   id: string;
   name: string;
-  provider: 'openai' | 'google' | 'mistralai';
+  provider: 'openai' | 'google' | 'mistralai' | 'anthropic' | 'qwen' | 'deepseek' | 'meta' | 'amazon';
+  tags?: string[];
 } 

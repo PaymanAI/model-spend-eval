@@ -70,7 +70,7 @@ export async function getModelResponse(modelId: string, prompt: string, expected
                         String(response);
 
     // First, analyze the AI's response
-    const isSuccess = responseText.toLowerCase().includes('success:');
+    const isSuccess = responseText.toLowerCase().includes('success');
     const reasonMatch = responseText.match(/(?:success|error):\s*(.+)/i);
     const reason = reasonMatch?.[1] || 'No reason provided';
 

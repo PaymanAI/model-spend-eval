@@ -1,11 +1,13 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { TestResult, ModelConfig } from '@/types';
 import { Tooltip } from './Tooltip';
 import { 
   CheckCircleIcon, 
   XCircleIcon, 
   ClockIcon,
-  ExclamationTriangleIcon 
+  ExclamationTriangleIcon,
+  ChevronDownIcon,
+  ChevronUpIcon
 } from '@heroicons/react/24/solid';
 
 interface Props {
@@ -14,6 +16,15 @@ interface Props {
 }
 
 export const TestResults: React.FC<Props> = ({ results, models }) => {
+  const [expandedModels, setExpandedModels] = useState<Record<string, boolean>>({});
+
+  const toggleModelExpansion = (modelId: string) => {
+    setExpandedModels(prev => ({
+      ...prev,
+      [modelId]: !prev[modelId]
+    }));
+  };
+
   const calculateStats = (modelResults: TestResult[]) => {
     if (!modelResults?.length) return {
       successRate: 0,
@@ -54,13 +65,13 @@ export const TestResults: React.FC<Props> = ({ results, models }) => {
   }));
 
   return (
-    <div className="mt-8 space-y-6">
+    <div className="space-y-8">
       <h2 className="text-xl font-bold">Performance Analysis</h2>
 
-      {/* Summary Dashboard */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {modelStats.map(({ model, stats }) => (
-          <div key={model.id} className="bg-white rounded-lg shadow p-4">
+      {modelStats.map(({ model, stats }) => (
+        <div key={model.id} className="bg-gray-50 rounded-lg border">
+          {/* Model Header - Always Visible */}
+          <div className="p-6">
             <div className="flex justify-between items-center mb-4">
               <div>
                 <h3 className="font-medium text-lg">{model.name}</h3>
@@ -74,96 +85,96 @@ export const TestResults: React.FC<Props> = ({ results, models }) => {
               </div>
             </div>
 
-            <div className="grid grid-cols-3 gap-4 text-center">
+            {/* Stats Overview - Always Visible */}
+            <div className="grid grid-cols-3 gap-4 mb-4">
               <Tooltip content="Average response time per test">
-                <div className="bg-gray-50 p-2 rounded">
+                <div className="bg-white p-3 rounded-lg border">
                   <ClockIcon className="w-5 h-5 text-gray-600 mx-auto" />
-                  <div className="text-sm font-medium mt-1">
+                  <div className="text-sm font-medium mt-1 text-center">
                     {(stats.avgTime / 1000).toFixed(2)}s
                   </div>
-                  <div className="text-xs text-gray-500">Avg Time</div>
+                  <div className="text-xs text-gray-500 text-center">Avg Time</div>
                 </div>
               </Tooltip>
 
               <Tooltip content="Tests that failed due to incorrect implementation">
-                <div className="bg-gray-50 p-2 rounded">
+                <div className="bg-white p-3 rounded-lg border">
                   <ExclamationTriangleIcon className="w-5 h-5 text-yellow-500 mx-auto" />
-                  <div className="text-sm font-medium mt-1">
+                  <div className="text-sm font-medium mt-1 text-center">
                     {stats.implementationFailures}
                   </div>
-                  <div className="text-xs text-gray-500">Implementation</div>
+                  <div className="text-xs text-gray-500 text-center">Implementation</div>
                 </div>
               </Tooltip>
 
               <Tooltip content="Tests that produced unexpected results">
-                <div className="bg-gray-50 p-2 rounded">
+                <div className="bg-white p-3 rounded-lg border">
                   <XCircleIcon className="w-5 h-5 text-red-500 mx-auto" />
-                  <div className="text-sm font-medium mt-1">
+                  <div className="text-sm font-medium mt-1 text-center">
                     {stats.criticalFailures}
                   </div>
-                  <div className="text-xs text-gray-500">Critical</div>
+                  <div className="text-xs text-gray-500 text-center">Critical</div>
                 </div>
               </Tooltip>
             </div>
 
-            {/* Test Results Summary */}
-            <div className="mt-4 space-y-2">
-              {results[model.id].map((result, index) => (
-                <div 
-                  key={index} 
-                  className={`p-2 rounded-lg ${getStatusColor(result)} border`}
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      {!result.testPassed ? (
-                        <ExclamationTriangleIcon className="w-5 h-5 text-yellow-500" />
-                      ) : result.matchedExpectation ? (
-                        <CheckCircleIcon className="w-5 h-5 text-green-500" />
-                      ) : (
-                        <XCircleIcon className="w-5 h-5 text-red-500" />
-                      )}
-                      <span className="text-sm font-medium">
-                        {result.testId}
+            {/* Expansion Control */}
+            <button
+              onClick={() => toggleModelExpansion(model.id)}
+              className="w-full flex items-center justify-center gap-2 text-sm text-gray-600 hover:text-gray-900 transition-colors"
+            >
+              {expandedModels[model.id] ? (
+                <>
+                  <ChevronUpIcon className="w-4 h-4" />
+                  Hide Test Results
+                </>
+              ) : (
+                <>
+                  <ChevronDownIcon className="w-4 h-4" />
+                  Show All Test Results ({results[model.id]?.length || 0})
+                </>
+              )}
+            </button>
+          </div>
+
+          {/* Expandable Test Results */}
+          {expandedModels[model.id] && (
+            <div className="border-t bg-white">
+              <div className="p-6 space-y-2">
+                {results[model.id]?.map((result, index) => (
+                  <div 
+                    key={index} 
+                    className={`p-3 rounded-lg ${getStatusColor(result)} border`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        {!result.testPassed ? (
+                          <ExclamationTriangleIcon className="w-5 h-5 text-yellow-500" />
+                        ) : result.matchedExpectation ? (
+                          <CheckCircleIcon className="w-5 h-5 text-green-500" />
+                        ) : (
+                          <XCircleIcon className="w-5 h-5 text-red-500" />
+                        )}
+                        <span className="text-sm font-medium">
+                          {result.testId}
+                        </span>
+                      </div>
+                      <span className="text-sm">
+                        {getStatusText(result)}
                       </span>
                     </div>
-                    <span className="text-sm">
-                      {getStatusText(result)}
-                    </span>
+                    {(!result.testPassed || !result.matchedExpectation) && (
+                      <p className="text-sm mt-1 text-gray-600 ml-7">
+                        {result.reason}
+                      </p>
+                    )}
                   </div>
-                  {(!result.testPassed || !result.matchedExpectation) && (
-                    <p className="text-sm mt-1 text-gray-600 ml-7">
-                      {result.reason}
-                    </p>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {/* Comparative Analysis */}
-      <div className="bg-white rounded-lg shadow p-4">
-        <h3 className="font-medium mb-4">Response Time Comparison</h3>
-        <div className="space-y-2">
-          {modelStats.map(({ model, stats }) => (
-            <div key={model.id} className="flex items-center gap-2">
-              <div className="w-24 text-sm">{model.name}</div>
-              <div className="flex-1 bg-gray-100 rounded-full h-4">
-                <div 
-                  className="bg-blue-500 rounded-full h-4 transition-all duration-500"
-                  style={{ 
-                    width: `${Math.min(100, (stats.avgTime / 2000) * 100)}%` 
-                  }}
-                />
-              </div>
-              <div className="w-20 text-sm text-right">
-                {(stats.avgTime / 1000).toFixed(2)}s
+                ))}
               </div>
             </div>
-          ))}
+          )}
         </div>
-      </div>
+      ))}
     </div>
   );
 }; 

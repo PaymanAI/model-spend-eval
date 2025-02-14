@@ -1,32 +1,35 @@
 import React from 'react';
-import { ModelConfig } from '../types';
+import { ModelConfig } from '@/types';
 
 interface Props {
   models: ModelConfig[];
   selectedModel: string | null;
-  onSelectModel: (modelId: string) => void;
+  onSelectModel: (modelId: string | null) => void;
 }
 
 export const ModelSelector: React.FC<Props> = ({ models, selectedModel, onSelectModel }) => {
   return (
-    <div className="p-4 bg-white rounded-lg shadow">
-      <h2 className="text-xl font-bold mb-4">Select Model</h2>
-      <div className="grid grid-cols-3 gap-4">
-        {models.map(model => (
-          <button
-            key={model.id}
-            className={`p-4 rounded-lg border ${
-              selectedModel === model.id 
-                ? 'border-blue-500 bg-blue-50' 
-                : 'border-gray-200 hover:border-blue-300'
-            }`}
-            onClick={() => onSelectModel(model.id)}
-          >
-            <div className="font-medium">{model.name}</div>
-            <div className="text-sm text-gray-500">{model.provider}</div>
-          </button>
-        ))}
-      </div>
+    <div className="flex flex-wrap gap-2">
+      {models.map(model => (
+        <button
+          key={model.id}
+          onClick={() => onSelectModel(model.id)}
+          className={`
+            px-4 py-2 rounded-full text-sm font-medium transition-all whitespace-nowrap
+            ${selectedModel === model.id 
+              ? 'bg-blue-100 text-blue-700 border-2 border-blue-500'
+              : 'bg-gray-100 text-gray-700 border border-gray-200 hover:border-blue-300'
+            }
+          `}
+        >
+          {model.name}
+          {model.tags?.includes('free') && (
+            <span className="ml-1 text-xs bg-green-100 text-green-800 px-1.5 py-0.5 rounded-full">
+              Free
+            </span>
+          )}
+        </button>
+      ))}
     </div>
   );
-} 
+}; 
