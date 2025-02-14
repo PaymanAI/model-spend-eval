@@ -6,6 +6,7 @@ import { TestRunner } from '@/components/TestRunner';
 import { TestResults } from '@/components/TestResults';
 import { ModelConfig, TestCase, TestResult } from '@/types';
 import { TEST_CASES } from '@/data/testCases';
+import { Toast } from '@/components/Toast';
 
 const AVAILABLE_MODELS: ModelConfig[] = [
   // OpenAI Models
@@ -85,6 +86,7 @@ export default function Home() {
   const [verdict, setVerdict] = useState<string | null>(null);
   const [isGeneratingVerdict, setIsGeneratingVerdict] = useState(false);
   const [verdictModelId, setVerdictModelId] = useState<string | null>(null);
+  const [showToast, setShowToast] = useState(false);
 
   // Handle shared results on mount
   useEffect(() => {
@@ -301,7 +303,8 @@ export default function Home() {
                                 const url = await handleShare();
                                 if (url) {
                                   await navigator.clipboard.writeText(url);
-                                  alert('Share link copied!');
+                                  setShowToast(true);
+                                  setTimeout(() => setShowToast(false), 2000);
                                 }
                               }}
                               className="flex items-center gap-2 px-3 py-1.5 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
@@ -358,6 +361,8 @@ export default function Home() {
           </div>
         </div>
       </div>
+
+      {showToast && <Toast message="Share link copied!" />}
     </main>
   );
 }
